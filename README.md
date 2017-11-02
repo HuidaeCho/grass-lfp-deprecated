@@ -14,7 +14,7 @@ In ArcGIS, export the flow direction raster to fdr.tif.
 r.in.gdal input=fdr.tif output=fdr
 
 # convert ArcGIS flow directions to GRASS GIS flow directions
-r.mapcalc expression="drain=int(8-log(fdr, 2))"
+r.mapcalc expression="drain=int(8-log(fdr,2))"
 ```
 
 For more information about flow direction conversion, see [this article](https://idea.isnew.info/how-to-import-arcgis-flow-direction-into-grass-gis.html).
