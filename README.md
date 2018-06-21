@@ -5,7 +5,9 @@ This shell script is a GRASS GIS module that creates longest flow paths at multi
 
 I developed this module because the longest flow path tool in the ArcGIS ArcHydro toolbox was not able to process one of my study areas. It took forever to generate outputs in ArcGIS, so I needed a way to generate longest flow paths at multiple monitoring points (name for outlet points in ArcHydro) in GRASS GIS.
 
-This shell script is deprecated by the new [r.lfp](https://grass.osgeo.org/grass74/manuals/addons/r.lfp.html) addon, which supports multiple outlets.
+## WARNING
+
+This shell script is deprecated by the new [r.lfp](https://grass.osgeo.org/grass74/manuals/addons/r.lfp.html) addon, which supports multiple outlets. Converting the longest flow path raster map to vector using r.to.vect, which this script does, can result in hydrologically invalid outputs. Please see [this article](https://idea.isnew.info/how-to-delineate-stream-networks-in-grass-gis.html).
 
 ## How to import the flow direction raster from ArcGIS
 
