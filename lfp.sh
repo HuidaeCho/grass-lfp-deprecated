@@ -96,7 +96,7 @@ v.edit map=lfp_tmp tool=create $overwrite
 v.db.addtable map=lfp_tmp columns="id int"
 
 # for each outlet
-for i in `v.db.select -c map=out column=id,x,y,fldsus`; do
+for i in `v.db.select -c map=out column=$idattr,x,y,fldsus`; do
 	id=`echo $i | awk -F'|' '{print $1}'`
 	x=`echo $i | awk -F'|' '{print $2}'`
 	y=`echo $i | awk -F'|' '{print $3}'`
