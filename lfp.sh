@@ -184,7 +184,7 @@ v.db.addtable map=lfp columns="id int"
 # for each outlet
 for cat in `v.category input=out option=print`; do
 	# extract a single outlet point
-	id=`v.db.select -c map=out column=id where="cat=$cat"`
+	id=`v.db.select -c map=out column=$idattr where="cat=$cat"`
 	v.extract input=out cat=$cat output=out_tmp $overwrite
 
 	# select lfp polyline for this outlet
