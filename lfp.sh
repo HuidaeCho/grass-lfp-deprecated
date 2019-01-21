@@ -7,7 +7,7 @@
 #
 # PURPOSE:      Creates longest flow paths at multiple outlets
 #
-# COPYRIGHT:    (C) 2017 by Huidae Cho <https://idea.isnew.info>
+# COPYRIGHT:    (C) 2017, 2019 by Huidae Cho <https://idea.isnew.info>
 #
 #               This program is free software under the GNU General Public
 #               License (>=v2). Read the file COPYING that comes with this
@@ -53,7 +53,7 @@ if [ -z $GISRC ]; then
 fi
 
 # parse arguments
-if   [ "$1" != "@ARGS_PARSED@" ]; then
+if [ "$1" != "@ARGS_PARSED@" ]; then
 	exec g.parser "$0" "$@"
 fi
 
@@ -74,29 +74,29 @@ buf=`perl -e "print $res/2"`
 diagres=`echo $res | awk '{printf "%f", sqrt(2)*$0+0.1}'`
 
 # make a copy of outlet points
-g.copy vect=$outlets,out $overwrite
+g.copy vect=$outlets,lfp_tmp_out $overwrite
 
 # convert outlet points to raster
-v.to.rast input=out output=out use=attr attr=$idattr
+v.to.rast input=lfp_tmp_out output=lfp_tmp_out use=attr attr=$idattr $overwrite
 
 # calculate downstream distance
-r.stream.distance -o stream_rast=out direc=$drainage method=downstream distance=flds
+r.stream.distance -o stream_rast=lfp_tmp_out direc=$drainage method=downstream distance=lfp_tmp_flds $overwrite
 # calculate upstream distance
-r.stream.distance -o stream_rast=out direc=$drainage method=upstream distance=flus
+r.stream.distance -o stream_rast=lfp_tmp_out direc=$drainage method=upstream distance=lfp_tmp_flus $overwrite
 # calculate the longest flow path (lfp)
-r.mapcalc exp="fldsus=flds+flus"
+r.mapcalc exp="lfp_tmp_fldsus=lfp_tmp_flds+lfp_tmp_flus" $overwrite
 
 # upload x, y, lfp distance to the outlet vector map
-v.db.addcolumn map=out column="x double, y double, fldsus double"
-v.to.db map=out option=coor column=x,y
-v.what.rast map=out raster=fldsus column=fldsus
+v.db.addcolumn map=lfp_tmp_out column="x real, y real, fldsus real"
+v.to.db map=lfp_tmp_out option=coor column=x,y
+v.what.rast map=lfp_tmp_out raster=lfp_tmp_fldsus column=fldsus
 
 # create an intermediate lfp vector map
 v.edit map=lfp_tmp tool=create $overwrite
 v.db.addtable map=lfp_tmp columns="id int"
 
 # for each outlet
-for i in `v.db.select -c map=out column=$idattr,x,y,fldsus`; do
+for i in `v.db.select -c map=lfp_tmp_out column=$idattr,x,y,fldsus`; do
 	id=`echo $i | awk -F'|' '{print $1}'`
 	x=`echo $i | awk -F'|' '{print $2}'`
 	y=`echo $i | awk -F'|' '{print $3}'`
@@ -104,7 +104,7 @@ for i in `v.db.select -c map=out column=$idattr,x,y,fldsus`; do
 	echo "$id: $fldsus @ $x,$y"
 
 	# find lfp for this outlet
-	r.mapcalc exp="lfp_tmp_$id=if(fldsus>=$fldsus-0.0005&fldsus<=$fldsus+0.0005,$id,null())" $overwrite
+	r.mapcalc exp="lfp_tmp_$id=if(lfp_tmp_fldsus>=$fldsus-0.0005&lfp_tmp_fldsus<=$fldsus+0.0005,$id,null())" $overwrite
 
 	# convert lfp to vector
 	r.thin input=lfp_tmp_$id output=lfp_tmp2_$id $overwrite
@@ -142,10 +142,10 @@ for i in `v.db.select -c map=out column=$idattr,x,y,fldsus`; do
 done
 
 # snap outlet points to lfps
-v.edit map=out tool=move move=0,0,0 where="" snap=node thresh=$res bgmap=lfp_tmp
+v.edit map=lfp_tmp_out tool=move move=0,0,0 where="" snap=node thresh=$res bgmap=lfp_tmp
 
 # buffer outlet points
-v.buffer input=out output=out_buf distance=$buf $overwrite
+v.buffer input=lfp_tmp_out output=lfp_tmp_out_buf distance=$buf $overwrite
 
 # extract lfp end nodes
 v.to.points input=lfp_tmp use=node output=lfp_tmp_end $overwrite
@@ -153,7 +153,7 @@ v.edit map=lfp_tmp_end layer=2 tool=delete where="along=0"
 
 # find lfps that need to be flipped: outlet points should be close to lfp end
 # nodes
-v.select ainput=lfp_tmp_end binput=out_buf output=lfp_tmp_end_flip operator=disjoint $overwrite
+v.select ainput=lfp_tmp_end binput=lfp_tmp_out_buf output=lfp_tmp_end_flip operator=disjoint $overwrite
 
 # flip lfps so that lfps point to outlets
 for cat in `v.db.select -c map=lfp_tmp_end_flip column=cat`; do
@@ -178,17 +178,17 @@ v.patch input=lfp_tmp,lfp_tmp2 output=lfp_tmp3 $overwrite
 v.build.polylines input=lfp_tmp3 output=lfp_tmp4 cats=first $overwrite
 
 # create an empty lfp vector map
-v.edit map=lfp tool=create $overwrite
-v.db.addtable map=lfp columns="id int"
+v.edit map=$output tool=create $overwrite
+v.db.addtable map=$output columns="id int"
 
 # for each outlet
-for cat in `v.category input=out option=print`; do
+for cat in `v.category input=lfp_tmp_out option=print`; do
 	# extract a single outlet point
-	id=`v.db.select -c map=out column=$idattr where="cat=$cat"`
-	v.extract input=out cat=$cat output=out_tmp $overwrite
+	id=`v.db.select -c map=lfp_tmp_out column=$idattr where="cat=$cat"`
+	v.extract input=lfp_tmp_out cat=$cat output=lfp_tmp_out_tmp $overwrite
 
 	# select lfp polyline for this outlet
-	v.select ainput=lfp_tmp4 binput=out_tmp output=lfp_tmp5 $overwrite
+	v.select ainput=lfp_tmp4 binput=lfp_tmp_out_tmp output=lfp_tmp5 $overwrite
 	v.db.addtable map=lfp_tmp5 columns="id int"
 
 	# add outlet ID to the lfp polyline
@@ -198,7 +198,7 @@ for cat in `v.category input=out option=print`; do
 	endcoor=`v.to.db -p map=lfp_tmp5 option=end separator=, | awk -F, '{if(NR==2) printf "%s,%s", $2, $3}'`
 
 	# get the outlet coordinates
-	coor=`v.to.db -p map=out_tmp option=coor separator=, | awk -F, '{if(NR==2) printf "%s,%s", $2, $3}'`
+	coor=`v.to.db -p map=lfp_tmp_out_tmp option=coor separator=, | awk -F, '{if(NR==2) printf "%s,%s", $2, $3}'`
 
 	# if these two points are different, split the lfp polyline and delete
 	# the downstream segment
@@ -208,5 +208,5 @@ for cat in `v.category input=out option=print`; do
 	fi
 
 	# patch all these lfps into the final vector map
-	v.patch -ae --o input=lfp_tmp5 output=lfp
+	v.patch -ae --o input=lfp_tmp5 output=$output
 done
