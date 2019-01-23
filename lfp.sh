@@ -87,7 +87,7 @@ r.stream.distance -o stream_rast=lfp_tmp_out direc=$drainage method=upstream dis
 r.mapcalc exp="lfp_tmp_fldsus=lfp_tmp_flds+lfp_tmp_flus" $overwrite
 
 # upload x, y, lfp distance to the outlet vector map
-v.db.addcolumn map=lfp_tmp_out column="x real, y real, fldsus real"
+v.db.addcolumn map=lfp_tmp_out column="x double precision, y double precision, fldsus double precision"
 v.to.db map=lfp_tmp_out option=coor column=x,y
 v.what.rast map=lfp_tmp_out raster=lfp_tmp_fldsus column=fldsus
 
