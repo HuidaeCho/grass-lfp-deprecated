@@ -153,12 +153,16 @@ v.edit map=lfp_tmp_end layer=2 tool=delete where="along=0"
 
 # find lfps that need to be flipped: outlet points should be close to lfp end
 # nodes
+g.remove -f type=vector name=lfp_tmp_end_flip
 v.select ainput=lfp_tmp_end binput=lfp_tmp_out_buf output=lfp_tmp_end_flip operator=disjoint $overwrite
 
 # flip lfps so that lfps point to outlets
-for cat in `v.db.select -c map=lfp_tmp_end_flip column=cat`; do
-	v.edit map=lfp_tmp tool=flip cat=$cat
-done
+eval `g.findfile element=vector file=lfp_tmp_end_flip`
+if [ "$file" ]; then
+	for cat in `v.db.select -c map=lfp_tmp_end_flip column=cat`; do
+		v.edit map=lfp_tmp tool=flip cat=$cat
+	done
+fi
 
 # find lfp start nodes
 v.to.points input=lfp_tmp output=lfp_tmp_start use=node $overwrite
@@ -188,6 +192,7 @@ for cat in `v.category input=lfp_tmp_out option=print`; do
 	v.extract input=lfp_tmp_out cat=$cat output=lfp_tmp_out_tmp $overwrite
 
 	# select lfp polyline for this outlet
+	g.remove -f type=vector name=lfp_tmp5
 	v.select ainput=lfp_tmp4 binput=lfp_tmp_out_tmp output=lfp_tmp5 $overwrite
 	v.db.addtable map=lfp_tmp5 columns="id int"
 
