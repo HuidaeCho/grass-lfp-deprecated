@@ -157,7 +157,7 @@ g.remove -f type=vector name=lfp_tmp_end_flip
 v.select ainput=lfp_tmp_end binput=lfp_tmp_out_buf output=lfp_tmp_end_flip operator=disjoint $overwrite
 
 # flip lfps so that lfps point to outlets
-eval `g.findfile element=vector file=lfp_tmp_end_flip`
+eval `g.findfile element=vector file=lfp_tmp_end_flip mapset=.`
 if [ "$file" ]; then
 	for cat in `v.db.select -c map=lfp_tmp_end_flip column=cat`; do
 		v.edit map=lfp_tmp tool=flip cat=$cat
